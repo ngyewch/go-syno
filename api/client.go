@@ -109,7 +109,6 @@ func (c *Client) doRawRequest(apiPath string, api string, version int, method st
 	}
 	requestUrl.RawQuery = q.Encode()
 
-	fmt.Println(requestUrl.String())
 	httpResponse, err := c.httpClient.Get(requestUrl.String())
 	if err != nil {
 		return nil, err
@@ -133,10 +132,20 @@ func (c *Client) doRequest(apiPath string, api string, version int, method strin
 		_ = r.Close()
 	}(r)
 
-	httpResponseBytes, err := io.ReadAll(r)
-	fmt.Println(string(httpResponseBytes))
+	var r0 io.Reader = r
 
-	jsonDecoder := json.NewDecoder(bytes.NewReader(httpResponseBytes))
+	const trace = false
+	if trace {
+		httpResponseBytes, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(httpResponseBytes))
+
+		r0 = bytes.NewReader(httpResponseBytes)
+	}
+
+	jsonDecoder := json.NewDecoder(r0)
 	err = jsonDecoder.Decode(response)
 	if err != nil {
 		return err
