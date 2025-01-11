@@ -26,24 +26,31 @@ var (
 	app = &cli.App{
 		Name:  "syno-cli",
 		Usage: "Synology CLI",
+		Flags: []cli.Flag{
+			baseUrlFlag,
+			usernameFlag,
+			passwordFlag,
+		},
 		Commands: []*cli.Command{
 			{
-				Name:   "login",
-				Usage:  "login",
-				Action: doLogin,
-				Flags: []cli.Flag{
-					baseUrlFlag,
-					usernameFlag,
-					passwordFlag,
-				},
+				Name:   "list-share",
+				Usage:  "list share",
+				Action: doListShare,
 			},
 			{
-				Name:   "info",
-				Usage:  "info",
-				Action: doInfo,
-				Flags: []cli.Flag{
-					baseUrlFlag,
-				},
+				Name:   "list",
+				Usage:  "list",
+				Action: doList,
+			},
+			{
+				Name:   "get-info",
+				Usage:  "get info",
+				Action: doGetInfo,
+			},
+			{
+				Name:   "download",
+				Usage:  "download",
+				Action: doDownload,
 			},
 		},
 	}

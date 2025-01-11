@@ -1,8 +1,10 @@
 package auth
 
-import "github.com/ngyewch/go-syno/api"
+import (
+	"github.com/ngyewch/go-syno/api"
+)
 
-type AuthApi struct {
+type Api struct {
 	client *api.Client
 }
 
@@ -22,13 +24,13 @@ type LogoutRequest struct {
 
 type LogoutResponse struct{}
 
-func NewAuthApi(client *api.Client) *AuthApi {
-	return &AuthApi{
+func New(client *api.Client) (*Api, error) {
+	return &Api{
 		client: client,
-	}
+	}, nil
 }
 
-func (c *AuthApi) Login(req LoginRequest) (*api.Response[LoginResponse], error) {
+func (a *Api) Login(req LoginRequest) (*api.Response[LoginResponse], error) {
 	paramMap := make(map[string]string)
 	paramMap["account"] = req.Account
 	paramMap["passwd"] = req.Passwd
@@ -36,19 +38,19 @@ func (c *AuthApi) Login(req LoginRequest) (*api.Response[LoginResponse], error) 
 	paramMap["format"] = "sid"
 
 	var res api.Response[LoginResponse]
-	err := c.client.Request("entry.cgi", "SYNO.API.Auth", "3", "login", paramMap, &res)
+	err := a.client.Request("SYNO.API.Auth", 3, "login", paramMap, &res)
 	if err != nil {
 		return nil, err
 	}
 	return &res, nil
 }
 
-func (c *AuthApi) Logout(req LogoutRequest) (*api.Response[LogoutResponse], error) {
+func (a *Api) Logout(req LogoutRequest) (*api.Response[LogoutResponse], error) {
 	paramMap := make(map[string]string)
 	paramMap["session"] = req.Session
 
 	var res api.Response[LogoutResponse]
-	err := c.client.Request("auth.cgi", "SYNO.API.Auth", "1", "logout", paramMap, &res)
+	err := a.client.Request("SYNO.API.Auth", 1, "logout", paramMap, &res)
 	if err != nil {
 		return nil, err
 	}
