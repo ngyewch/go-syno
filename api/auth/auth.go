@@ -42,6 +42,9 @@ func (a *Api) Login(req LoginRequest) (*api.Response[LoginResponse], error) {
 	if err != nil {
 		return nil, err
 	}
+	if res.Error != nil {
+		return nil, res.Error
+	}
 	return &res, nil
 }
 
@@ -53,6 +56,9 @@ func (a *Api) Logout(req LogoutRequest) (*api.Response[LogoutResponse], error) {
 	err := a.client.Request("SYNO.API.Auth", 1, "logout", paramMap, &res)
 	if err != nil {
 		return nil, err
+	}
+	if res.Error != nil {
+		return nil, res.Error
 	}
 	return &res, nil
 }

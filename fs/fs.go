@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"github.com/ngyewch/go-syno/api"
 	"github.com/ngyewch/go-syno/api/filestation"
 	"io"
@@ -11,18 +10,53 @@ import (
 )
 
 type FS struct {
+	dir            string
+	client         *api.Client
 	fileStationApi *filestation.Api
 }
 
-func NewFS(client *api.Client) *FS {
-	return &FS{
-		fileStationApi: filestation.New(client),
+func NewFS(client *api.Client, dir string) (*FS, error) {
+	if dir == "" {
+		return nil, fs.ErrInvalid
 	}
+	fileStationApi := filestation.New(client)
+	getInfoResponse, err := fileStationApi.GetInfo(filestation.GetInfoRequest{
+		Path:       []string{dir},
+		Additional: []string{"size", "time"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(getInfoResponse.Data.Files) == 0 {
+		return nil, fs.ErrNotExist
+	}
+	entry := getInfoResponse.Data.Files[0]
+	if entry.Additional == nil {
+		return nil, fs.ErrNotExist
+	}
+	if !entry.IsDir {
+		return nil, fs.ErrInvalid
+	}
+
+	return &FS{
+		dir:            dir,
+		client:         client,
+		fileStationApi: fileStationApi,
+	}, nil
+}
+
+func (f *FS) resolvePath(name string) string {
+	resolvedPath := f.dir
+	if name != "" {
+		resolvedPath += "/" + name
+	}
+	return resolvedPath
 }
 
 func (f *FS) Open(name string) (fs.File, error) {
 	r, err := f.fileStationApi.Download(filestation.DownloadRequest{
-		Path: []string{name},
+		Path: []string{f.resolvePath(name)},
 		Mode: "download",
 	})
 	if err != nil {
@@ -37,14 +71,11 @@ func (f *FS) Open(name string) (fs.File, error) {
 
 func (f *FS) Stat(name string) (fs.FileInfo, error) {
 	getInfoResponse, err := f.fileStationApi.GetInfo(filestation.GetInfoRequest{
-		Path:       []string{name},
+		Path:       []string{f.resolvePath(name)},
 		Additional: []string{"size", "time"},
 	})
 	if err != nil {
 		return nil, err
-	}
-	if !getInfoResponse.Success {
-		return nil, fmt.Errorf("synology error code: %d", getInfoResponse.Error.Code)
 	}
 	if getInfoResponse.Data == nil || len(getInfoResponse.Data.Files) == 0 || getInfoResponse.Data.Files[0].Additional == nil {
 		return nil, fs.ErrNotExist
@@ -56,14 +87,11 @@ func (f *FS) Stat(name string) (fs.FileInfo, error) {
 
 func (f *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	listResponse, err := f.fileStationApi.List(filestation.ListRequest{
-		FolderPath: name,
+		FolderPath: f.resolvePath(name),
 		Additional: []string{"size", "time"},
 	})
 	if err != nil {
 		return nil, err
-	}
-	if !listResponse.Success {
-		return nil, fmt.Errorf("synology error code: %d", listResponse.Error.Code)
 	}
 	var dirEntries []fs.DirEntry
 	for _, file := range listResponse.Data.Files {
@@ -72,6 +100,10 @@ func (f *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		})
 	}
 	return dirEntries, nil
+}
+
+func (f *FS) Sub(dir string) (fs.FS, error) {
+	return NewFS(f.client, f.resolvePath(dir))
 }
 
 // ----

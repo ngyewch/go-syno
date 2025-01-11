@@ -10,6 +10,20 @@ import (
 	"strconv"
 )
 
+var (
+	commonErrorCodes = map[int]string{
+		100: "Unknown error",
+		101: "No parameter of API, method or version",
+		102: "The requested API does not exist",
+		103: "The requested method does not exist",
+		104: "The requested version does not support the functionality",
+		105: "The logged in session does not have permission",
+		106: "Session timeout",
+		107: "Session interrupted by duplicate login",
+		119: "SID not found",
+	}
+)
+
 type Client struct {
 	baseUrl    string
 	httpClient *http.Client
@@ -26,6 +40,10 @@ type Response[T any] struct {
 type Error struct {
 	Code   int          `json:"code"`
 	Errors []ErrorEntry `json:"errors,omitempty"`
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("Synology API error: %d", e.Code)
 }
 
 type ErrorEntry struct {
@@ -117,7 +135,7 @@ func (c *Client) doRawRequest(apiPath string, api string, version int, method st
 		defer func(Body io.ReadCloser) {
 			_ = Body.Close()
 		}(httpResponse.Body)
-		return nil, fmt.Errorf("API returned status code %d", httpResponse.StatusCode)
+		return nil, fmt.Errorf("HTTP status code %d", httpResponse.StatusCode)
 	}
 
 	return httpResponse.Body, nil

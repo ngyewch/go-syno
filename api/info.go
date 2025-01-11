@@ -27,5 +27,8 @@ func (c *Client) query(req QueryRequest) (*Response[QueryResponse], error) {
 	if err != nil {
 		return nil, err
 	}
+	if res.Error != nil {
+		return nil, res.Error
+	}
 	return &res, nil
 }
