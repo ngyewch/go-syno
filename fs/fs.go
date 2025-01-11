@@ -5,6 +5,7 @@ import (
 	"github.com/ngyewch/go-syno/api/filestation"
 	"io"
 	"io/fs"
+	"path"
 	"path/filepath"
 	"time"
 )
@@ -47,11 +48,7 @@ func NewFS(client *api.Client, dir string) (*FS, error) {
 }
 
 func (f *FS) resolvePath(name string) string {
-	resolvedPath := f.dir
-	if name != "" {
-		resolvedPath += "/" + name
-	}
-	return resolvedPath
+	return path.Clean(path.Join(f.dir, name))
 }
 
 func (f *FS) Open(name string) (fs.File, error) {
